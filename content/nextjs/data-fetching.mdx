@@ -1,0 +1,217 @@
+---
+title: Data Fetching în Next.js
+description: Fetch date în Server Components, Client Components și Route Handlers.
+---
+
+import { Callout, Tabs, Steps } from 'nextra/components'
+
+# Data Fetching în Next.js
+
+Next.js App Router oferă mai multe modalități de a obține date, fiecare cu scopul ei.
+
+## Server Components (recomandat)
+
+În App Router, toate componentele sunt **Server Components** by default. Poți face `fetch` direct în ele — fără `useEffect`, fără loading state manual.
+
+```jsx
+// app/posts/page.jsx — rulează pe server, nu în browser
+export default async function PostsPage() {
+  const res = await fetch('https://jsonplaceholder.typicode.com/posts?_limit=5')
+  const posts = await res.json()
+
+  return (
+    <ul>
+      {posts.map(post => (
+        <li key={post.id}>
+          <strong>{post.title}</strong>
+          <p>{post.body}</p>
+        </li>
+      ))}
+    </ul>
+  )
+}
+```
+
+<Callout type="info">
+  Nu ai nevoie de `useState` sau `useEffect`. Componenta este `async` și `await`-ezi direct datele. Codul rulează **pe server**, deci API keys și date sensibile nu ajung în browser.
+</Callout>
+
+## Caching și Revalidare
+
+Next.js extinde `fetch` cu opțiuni de caching:
+
+<Tabs items={['Cache static', 'Revalidare periodică', 'Fără cache']}>
+  <Tabs.Tab>
+```jsx
+// Date cache-uite indefinit (default la build time)
+const res = await fetch('https://api.example.com/data', {
+  cache: 'force-cache'
+})
+```
+  </Tabs.Tab>
+  <Tabs.Tab>
+```jsx
+// Revalidează datele la fiecare 60 secunde (ISR)
+const res = await fetch('https://api.example.com/data', {
+  next: { revalidate: 60 }
+})
+```
+  </Tabs.Tab>
+  <Tabs.Tab>
+```jsx
+// Niciodată cached — date mereu proaspete
+const res = await fetch('https://api.example.com/data', {
+  cache: 'no-store'
+})
+```
+  </Tabs.Tab>
+</Tabs>
+
+## Date dinamice per pagină
+
+```jsx
+// app/posts/[id]/page.jsx
+export default async function PostPage({ params }) {
+  const { id } = await params
+  const res = await fetch(`https://jsonplaceholder.typicode.com/posts/${id}`)
+  const post = await res.json()
+
+  return (
+    <article>
+      <h1>{post.title}</h1>
+      <p>{post.body}</p>
+    </article>
+  )
+}
+```
+
+### generateStaticParams — pre-generare la build
+
+```jsx
+// Generează static paginile /posts/1, /posts/2, ... /posts/10
+export async function generateStaticParams() {
+  const posts = await fetch('https://jsonplaceholder.typicode.com/posts?_limit=10').then(r => r.json())
+
+  return posts.map(post => ({
+    id: String(post.id),
+  }))
+}
+```
+
+## Client Components
+
+Când ai nevoie de interactivitate (filtre, paginare, căutare în timp real), fetch-ul se face în Client Components:
+
+```jsx
+'use client'
+import { useState, useEffect } from 'react'
+
+export default function SearchPosts() {
+  const [query, setQuery] = useState('')
+  const [posts, setPosts] = useState([])
+  const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    if (!query) return
+    setLoading(true)
+    fetch(`/api/posts?q=${query}`)
+      .then(r => r.json())
+      .then(data => {
+        setPosts(data)
+        setLoading(false)
+      })
+  }, [query])
+
+  return (
+    <div>
+      <input value={query} onChange={e => setQuery(e.target.value)} placeholder="Caută..." />
+      {loading && <p>Se caută...</p>}
+      <ul>
+        {posts.map(p => <li key={p.id}>{p.title}</li>)}
+      </ul>
+    </div>
+  )
+}
+```
+
+## Route Handlers (API Routes)
+
+Creează endpoint-uri API în `app/api/`:
+
+```jsx
+// app/api/posts/route.js
+import { NextResponse } from 'next/server'
+
+const posts = [
+  { id: 1, title: 'Primul articol' },
+  { id: 2, title: 'Al doilea articol' },
+]
+
+export async function GET(request) {
+  const { searchParams } = new URL(request.url)
+  const q = searchParams.get('q') ?? ''
+
+  const filtered = posts.filter(p =>
+    p.title.toLowerCase().includes(q.toLowerCase())
+  )
+
+  return NextResponse.json(filtered)
+}
+
+export async function POST(request) {
+  const body = await request.json()
+  const newPost = { id: Date.now(), title: body.title }
+  posts.push(newPost)
+  return NextResponse.json(newPost, { status: 201 })
+}
+```
+
+<Callout type="warning">
+  Nu apela Route Handlers din Server Components! Fă fetch direct la baza de date sau serviciu — elimini un round-trip inutil de rețea.
+</Callout>
+
+## Pattern recomandat: Separarea responsabilităților
+
+<Steps>
+### Server Component — aduce datele
+
+```jsx
+// app/dashboard/page.jsx
+import { StatsClient } from './StatsClient'
+
+async function getStats() {
+  const res = await fetch('https://api.example.com/stats', {
+    next: { revalidate: 300 }
+  })
+  return res.json()
+}
+
+export default async function DashboardPage() {
+  const stats = await getStats()
+  return <StatsClient initialData={stats} />
+}
+```
+
+### Client Component — gestionează interactivitatea
+
+```jsx
+// app/dashboard/StatsClient.jsx
+'use client'
+import { useState } from 'react'
+
+export function StatsClient({ initialData }) {
+  const [data, setData] = useState(initialData)
+
+  return (
+    <div>
+      <p>Vizitatori: {data.visitors}</p>
+      <button onClick={() => fetch('/api/stats').then(r => r.json()).then(setData)}>
+        Actualizează
+      </button>
+    </div>
+  )
+}
+```
+</Steps>
+
+Astfel obții cel mai bun din ambele lumi: **randare rapidă pe server** + **interactivitate pe client**.

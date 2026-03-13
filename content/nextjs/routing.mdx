@@ -1,0 +1,197 @@
+---
+title: Routing în Next.js
+description: Înțelege sistemul de routing bazat pe fișiere din Next.js App Router.
+---
+
+import { Callout, FileTree, Steps, Tabs } from 'nextra/components'
+
+# Routing în Next.js
+
+Next.js folosește un sistem de routing **bazat pe fișiere**. Structura folderelor din `app/` definește automat URL-urile aplicației tale.
+
+## Conceptul de bază
+
+Fiecare folder din `app/` reprezintă un **segment de URL**, iar fișierul `page.jsx` din acel folder face ruta accesibilă public.
+
+<FileTree>
+  <FileTree.Folder name="app" defaultOpen>
+    <FileTree.File name="layout.jsx" />
+    <FileTree.File name="page.jsx" label="→ /" />
+    <FileTree.Folder name="about">
+      <FileTree.File name="page.jsx" label="→ /about" />
+    </FileTree.Folder>
+    <FileTree.Folder name="blog">
+      <FileTree.File name="page.jsx" label="→ /blog" />
+      <FileTree.Folder name="[slug]">
+        <FileTree.File name="page.jsx" label="→ /blog/:slug" />
+      </FileTree.Folder>
+    </FileTree.Folder>
+  </FileTree.Folder>
+</FileTree>
+
+## Rute statice
+
+```jsx
+// app/about/page.jsx → /about
+export default function AboutPage() {
+  return <h1>Despre noi</h1>
+}
+```
+
+```jsx
+// app/blog/page.jsx → /blog
+export default function BlogPage() {
+  return <h1>Blog</h1>
+}
+```
+
+## Rute dinamice
+
+Folosești `[param]` pentru segmente variabile:
+
+```jsx
+// app/blog/[slug]/page.jsx → /blog/orice-slug
+export default async function BlogPost({ params }) {
+  const { slug } = await params
+  return <h1>Articol: {slug}</h1>
+}
+```
+
+### Catch-all routes
+
+```jsx
+// app/docs/[...path]/page.jsx → /docs/a/b/c
+export default async function DocsPage({ params }) {
+  const { path } = await params
+  // path = ['a', 'b', 'c']
+  return <p>Cale: {path.join('/')}</p>
+}
+```
+
+<Callout type="info">
+  `[[...path]]` (cu paranteze duble) face segmentele **opționale** — ruta funcționează și fără ele. Nextra folosește exact acest pattern!
+</Callout>
+
+## Layouts
+
+Fișierul `layout.jsx` **învelește** toate paginile din același folder și sub-foldere. Nu se re-randează la navigare.
+
+```jsx
+// app/blog/layout.jsx
+export default function BlogLayout({ children }) {
+  return (
+    <div>
+      <nav>
+        <a href="/blog">Toate articolele</a>
+      </nav>
+      <main>{children}</main>
+    </div>
+  )
+}
+```
+
+<FileTree>
+  <FileTree.Folder name="app" defaultOpen>
+    <FileTree.File name="layout.jsx" label="Root layout (învelește tot)" />
+    <FileTree.Folder name="blog" defaultOpen>
+      <FileTree.File name="layout.jsx" label="Blog layout (învelește /blog/*)" />
+      <FileTree.File name="page.jsx" />
+      <FileTree.Folder name="[slug]">
+        <FileTree.File name="page.jsx" />
+      </FileTree.Folder>
+    </FileTree.Folder>
+  </FileTree.Folder>
+</FileTree>
+
+## Link și navigare
+
+Folosește componenta `<Link>` în loc de `<a>` pentru navigare client-side rapidă:
+
+```jsx
+import Link from 'next/link'
+
+export default function Nav() {
+  return (
+    <nav>
+      <Link href="/">Acasă</Link>
+      <Link href="/about">Despre</Link>
+      <Link href="/blog">Blog</Link>
+    </nav>
+  )
+}
+```
+
+## Navigare programatică
+
+```jsx
+'use client'
+import { useRouter } from 'next/navigation'
+
+export default function LoginButton() {
+  const router = useRouter()
+
+  async function handleLogin() {
+    await login()
+    router.push('/dashboard')   // redirect
+    // router.replace('/dashboard') // fără history entry
+    // router.back()               // înapoi
+  }
+
+  return <button onClick={handleLogin}>Intră în cont</button>
+}
+```
+
+<Callout type="warning">
+  `useRouter` din `next/navigation` funcționează **doar în Client Components** (cu `'use client'`).
+</Callout>
+
+## Route Groups
+
+Poți organiza rutele fără a afecta URL-ul folosind paranteze `(group)`:
+
+<FileTree>
+  <FileTree.Folder name="app" defaultOpen>
+    <FileTree.Folder name="(marketing)">
+      <FileTree.File name="page.jsx" label="→ /" />
+      <FileTree.Folder name="about">
+        <FileTree.File name="page.jsx" label="→ /about" />
+      </FileTree.Folder>
+    </FileTree.Folder>
+    <FileTree.Folder name="(dashboard)">
+      <FileTree.File name="layout.jsx" label="Layout separat pentru dashboard" />
+      <FileTree.Folder name="dashboard">
+        <FileTree.File name="page.jsx" label="→ /dashboard" />
+      </FileTree.Folder>
+    </FileTree.Folder>
+  </FileTree.Folder>
+</FileTree>
+
+## Pagini speciale
+
+| Fișier | Rol |
+|--------|-----|
+| `page.jsx` | Pagina publică a rutei |
+| `layout.jsx` | Layout persistent |
+| `loading.jsx` | UI de loading (Suspense automat) |
+| `error.jsx` | UI pentru erori |
+| `not-found.jsx` | Pagina 404 |
+
+```jsx
+// app/blog/loading.jsx
+export default function Loading() {
+  return <p>Se încarcă articolele...</p>
+}
+```
+
+```jsx
+// app/blog/error.jsx
+'use client'
+export default function Error({ error, reset }) {
+  return (
+    <div>
+      <p>Ceva a mers greșit: {error.message}</p>
+      <button onClick={reset}>Încearcă din nou</button>
+    </div>
+  )
+}
+```

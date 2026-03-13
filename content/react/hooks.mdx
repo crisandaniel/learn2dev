@@ -1,0 +1,155 @@
+---
+title: React Hooks
+description: Înțelege useState, useEffect și celelalte hooks esențiale.
+---
+
+import { Callout, Tabs } from 'nextra/components'
+
+# React Hooks
+
+Hooks-urile îți permit să folosești funcționalități React (state, efecte secundare etc.) în componente funcționale.
+
+## useState
+
+`useState` adaugă **state local** unui component.
+
+```jsx
+import { useState } from 'react'
+
+export default function Counter() {
+  const [count, setCount] = useState(0)
+
+  return (
+    <div>
+      <p>Ai apăsat de {count} ori</p>
+      <button onClick={() => setCount(count + 1)}>
+        Apasă-mă
+      </button>
+    </div>
+  )
+}
+```
+
+<Callout>
+  `useState` returnează mereu un array cu două elemente: **valoarea curentă** și **funcția de actualizare**.
+</Callout>
+
+### State cu obiecte
+
+```jsx
+import { useState } from 'react'
+
+export default function Form() {
+  const [user, setUser] = useState({ name: '', email: '' })
+
+  function handleChange(e) {
+    setUser(prev => ({ ...prev, [e.target.name]: e.target.value }))
+  }
+
+  return (
+    <form>
+      <input name="name" value={user.name} onChange={handleChange} placeholder="Nume" />
+      <input name="email" value={user.email} onChange={handleChange} placeholder="Email" />
+      <p>Salut, {user.name}!</p>
+    </form>
+  )
+}
+```
+
+## useEffect
+
+`useEffect` rulează **efecte secundare** după ce componenta se randează: fetch date, subscripții, manipularea DOM-ului.
+
+<Tabs items={['Fără dependențe', 'Cu dependențe', 'Cleanup']}>
+  <Tabs.Tab>
+```jsx
+useEffect(() => {
+  // Rulează după fiecare render
+  document.title = 'Pagina mea'
+})
+```
+  </Tabs.Tab>
+  <Tabs.Tab>
+```jsx
+useEffect(() => {
+  // Rulează doar când `userId` se schimbă
+  fetchUser(userId)
+}, [userId])
+```
+  </Tabs.Tab>
+  <Tabs.Tab>
+```jsx
+useEffect(() => {
+  const timer = setInterval(() => {
+    setCount(c => c + 1)
+  }, 1000)
+
+  // Cleanup: oprește timer-ul când componenta se demontează
+  return () => clearInterval(timer)
+}, [])
+```
+  </Tabs.Tab>
+</Tabs>
+
+### Exemplu complet: fetch date
+
+```jsx
+import { useState, useEffect } from 'react'
+
+export default function UserList() {
+  const [users, setUsers] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    fetch('https://jsonplaceholder.typicode.com/users')
+      .then(res => res.json())
+      .then(data => {
+        setUsers(data)
+        setLoading(false)
+      })
+  }, []) // [] = rulează o singură dată, la mount
+
+  if (loading) return <p>Se încarcă...</p>
+
+  return (
+    <ul>
+      {users.map(user => (
+        <li key={user.id}>{user.name} — {user.email}</li>
+      ))}
+    </ul>
+  )
+}
+```
+
+## useRef
+
+`useRef` creează o referință mutabilă care **nu declanșează re-render**.
+
+```jsx
+import { useRef } from 'react'
+
+export default function TextInput() {
+  const inputRef = useRef(null)
+
+  function focusInput() {
+    inputRef.current.focus()
+  }
+
+  return (
+    <>
+      <input ref={inputRef} placeholder="Scrie ceva..." />
+      <button onClick={focusInput}>Focus</button>
+    </>
+  )
+}
+```
+
+<Callout type="warning">
+  Nu scrie în `ref.current` în timpul randării. Refs sunt pentru efecte secundare și acces la DOM.
+</Callout>
+
+## Reguli pentru Hooks
+
+1. Apelează hooks **doar la nivel de top** — nu în condiții, bucle sau funcții imbricate
+2. Apelează hooks **doar din componente React** sau din custom hooks
+3. Numele custom hooks-urilor **trebuie** să înceapă cu `use`

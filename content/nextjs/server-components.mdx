@@ -1,0 +1,168 @@
+---
+title: Server Components
+description: Înțelege diferența dintre Server și Client Components și când să le folosești.
+---
+
+import { Callout, Cards } from 'nextra/components'
+
+# Server Components
+
+React Server Components (RSC) este una dintre cele mai importante inovații din Next.js App Router. Înțelegerea diferenței dintre Server și Client Components este esențială.
+
+## Server vs Client — pe scurt
+
+| | Server Component | Client Component |
+|---|---|---|
+| **Unde rulează** | Pe server, la request | În browser |
+| **Directive** | Nimic (default) | `'use client'` la top |
+| **Poate fi async** | ✅ Da | ❌ Nu |
+| **Acces la DB/FS** | ✅ Direct | ❌ Nu |
+| **useState / useEffect** | ❌ Nu | ✅ Da |
+| **Event handlers** | ❌ Nu | ✅ Da |
+| **Bundle size** | Zero JS trimis | Adaugă la bundle |
+
+## Server Components
+
+Sunt componentele **default** în App Router. Rulează pe server și trimit HTML gata randat.
+
+```jsx
+// app/products/page.jsx — Server Component
+import { db } from '@/lib/db'
+
+export default async function ProductsPage() {
+  // Acces direct la baza de date — codul NU ajunge în browser
+  const products = await db.product.findMany()
+
+  return (
+    <div>
+      {products.map(p => (
+        <div key={p.id}>
+          <h2>{p.name}</h2>
+          <p>{p.price} RON</p>
+        </div>
+      ))}
+    </div>
+  )
+}
+```
+
+<Callout type="info">
+  Cheia de acces la baza de date, query-urile SQL, logica de business — toate rămân **pe server**. Browserul primește doar HTML.
+</Callout>
+
+## Client Components
+
+Adaugi `'use client'` când componenta are nevoie de:
+- State (`useState`, `useReducer`)
+- Efecte (`useEffect`)
+- Event handlers (`onClick`, `onChange`)
+- API-uri de browser (`window`, `localStorage`, `navigator`)
+
+```jsx
+// components/AddToCart.jsx — Client Component
+'use client'
+import { useState } from 'react'
+
+export default function AddToCart({ productId }) {
+  const [added, setAdded] = useState(false)
+
+  function handleAdd() {
+    // logică de coș
+    setAdded(true)
+  }
+
+  return (
+    <button onClick={handleAdd} disabled={added}>
+      {added ? '✅ Adăugat' : 'Adaugă în coș'}
+    </button>
+  )
+}
+```
+
+## Compunerea lor împreună
+
+Poți importa Client Components în Server Components, dar **nu și invers**:
+
+```jsx
+// app/products/[id]/page.jsx — Server Component
+import { db } from '@/lib/db'
+import AddToCart from '@/components/AddToCart'  // Client Component
+
+export default async function ProductPage({ params }) {
+  const { id } = await params
+  const product = await db.product.findUnique({ where: { id } })
+
+  return (
+    <div>
+      <h1>{product.name}</h1>
+      <p>{product.description}</p>
+      <strong>{product.price} RON</strong>
+
+      {/* Client Component imbricat în Server Component ✅ */}
+      <AddToCart productId={product.id} />
+    </div>
+  )
+}
+```
+
+<Callout type="warning">
+  Nu poți importa un Server Component **din** un Client Component. Poți însă să pasezi Server Components ca `children` unui Client Component.
+</Callout>
+
+## Pattern: Children ca Server Components
+
+```jsx
+// components/Modal.jsx — Client Component
+'use client'
+import { useState } from 'react'
+
+export default function Modal({ children }) {
+  const [open, setOpen] = useState(false)
+  return (
+    <>
+      <button onClick={() => setOpen(true)}>Deschide</button>
+      {open && (
+        <div className="modal">
+          {children} {/* poate fi un Server Component! */}
+          <button onClick={() => setOpen(false)}>Închide</button>
+        </div>
+      )}
+    </>
+  )
+}
+```
+
+```jsx
+// app/page.jsx — Server Component
+import Modal from '@/components/Modal'
+import HeavyContent from '@/components/HeavyContent' // Server Component
+
+export default function Page() {
+  return (
+    <Modal>
+      <HeavyContent /> {/* ✅ Server Component pasat ca children */}
+    </Modal>
+  )
+}
+```
+
+## Când să folosești fiecare
+
+**Folosește Server Components pentru:**
+- Fetch date din DB sau API
+- Accesarea fișierelor de pe server
+- Păstrarea secretelor (API keys, tokens)
+- Reducerea JavaScript-ului trimis în browser
+- Componentele care nu au interactivitate
+
+**Folosește Client Components pentru:**
+- Butoane, formulare, input-uri
+- Animații și tranziții
+- Funcționalități care depind de browser (`window`, `document`)
+- State care se actualizează în timp real
+- Custom hooks cu useState/useEffect
+
+<Cards>
+  <Cards.Card title="← Data Fetching" href="/docs/nextjs/data-fetching" />
+  <Cards.Card title="Routing →" href="/docs/nextjs/routing" />
+</Cards>

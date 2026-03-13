@@ -1,0 +1,134 @@
+---
+title: Componente React
+description: Învață cum să construiești componente UI reutilizabile în React.
+---
+
+import { Callout, Steps } from 'nextra/components'
+
+# Componente React
+
+Componentele sunt blocurile de bază ale oricărei aplicații React. Un component este o funcție JavaScript care returnează JSX.
+
+## Primul tău component
+
+```jsx
+function Greeting({ name }) {
+  return <h1>Bună, {name}!</h1>
+}
+
+export default function App() {
+  return <Greeting name="lume" />
+}
+```
+
+<Callout type="info">
+  Numele componentelor **trebuie** să înceapă cu literă mare. `greeting` nu va funcționa — trebuie `Greeting`.
+</Callout>
+
+## Props
+
+Props sunt datele pe care le trimiți unui component, similar parametrilor unei funcții.
+
+```jsx
+function Card({ title, description, emoji }) {
+  return (
+    <div style={{ border: '1px solid #eee', padding: '1rem', borderRadius: '8px' }}>
+      <span>{emoji}</span>
+      <h2>{title}</h2>
+      <p>{description}</p>
+    </div>
+  )
+}
+
+export default function App() {
+  return (
+    <Card
+      title="React"
+      description="O bibliotecă pentru interfețe UI"
+      emoji="⚛️"
+    />
+  )
+}
+```
+
+## Props cu valori default
+
+```jsx
+function Button({ label = 'Click me', color = 'blue' }) {
+  return (
+    <button style={{ backgroundColor: color }}>
+      {label}
+    </button>
+  )
+}
+```
+
+## Componente imbricate
+
+<Steps>
+### Creează componentele mici
+
+```jsx
+function Avatar({ src, alt }) {
+  return <img src={src} alt={alt} style={{ borderRadius: '50%', width: 48 }} />
+}
+
+function Username({ name }) {
+  return <strong>{name}</strong>
+}
+```
+
+### Compune-le împreună
+
+```jsx
+function UserCard({ name, avatar }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+      <Avatar src={avatar} alt={name} />
+      <Username name={name} />
+    </div>
+  )
+}
+```
+
+### Folosește componenta compusă
+
+```jsx
+export default function App() {
+  return (
+    <UserCard
+      name="Ion Popescu"
+      avatar="https://i.pravatar.cc/150"
+    />
+  )
+}
+```
+</Steps>
+
+## Children
+
+Prop-ul special `children` îți permite să pasezi conținut între tag-urile unui component:
+
+```jsx
+function Panel({ title, children }) {
+  return (
+    <section>
+      <h2>{title}</h2>
+      <div>{children}</div>
+    </section>
+  )
+}
+
+export default function App() {
+  return (
+    <Panel title="Despre noi">
+      <p>Suntem o echipă de dezvoltatori pasionați.</p>
+      <a href="/contact">Contactează-ne</a>
+    </Panel>
+  )
+}
+```
+
+<Callout type="warning">
+  Nu modifica props! Props sunt **read-only**. Dacă ai nevoie să modifici date, folosește `state`.
+</Callout>

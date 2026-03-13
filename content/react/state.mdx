@@ -1,0 +1,122 @@
+---
+title: State Management
+description: Gestionarea state-ului local și global în React.
+---
+
+import { Callout, FileTree } from 'nextra/components'
+
+# State Management
+
+Pe măsură ce aplicația crește, gestionarea state-ului devine mai complexă. Iată soluțiile de la simplu la avansat.
+
+## State local cu useState
+
+Potrivit pentru date care aparțin unui singur component:
+
+```jsx
+import { useState } from 'react'
+
+function Toggle() {
+  const [isOpen, setIsOpen] = useState(false)
+  return (
+    <button onClick={() => setIsOpen(prev => !prev)}>
+      {isOpen ? 'Închide' : 'Deschide'}
+    </button>
+  )
+}
+```
+
+## Lifting State Up
+
+Când două componente au nevoie de același state, mută-l în **părintele comun**:
+
+```jsx
+function Parent() {
+  const [count, setCount] = useState(0)
+
+  return (
+    <>
+      <Display count={count} />
+      <Controls onIncrement={() => setCount(c => c + 1)} />
+    </>
+  )
+}
+
+function Display({ count }) {
+  return <p>Count: {count}</p>
+}
+
+function Controls({ onIncrement }) {
+  return <button onClick={onIncrement}>+1</button>
+}
+```
+
+## Context API
+
+Pentru state care trebuie accesibil în toată aplicația (temă, utilizator autentificat etc.):
+
+```jsx
+import { createContext, useContext, useState } from 'react'
+
+// 1. Creează contextul
+const ThemeContext = createContext('light')
+
+// 2. Furnizează contextul
+export function ThemeProvider({ children }) {
+  const [theme, setTheme] = useState('light')
+  return (
+    <ThemeContext.Provider value={{ theme, setTheme }}>
+      {children}
+    </ThemeContext.Provider>
+  )
+}
+
+// 3. Consumă contextul
+function ThemedButton() {
+  const { theme, setTheme } = useContext(ThemeContext)
+  return (
+    <button
+      style={{ background: theme === 'light' ? '#fff' : '#333', color: theme === 'light' ? '#000' : '#fff' }}
+      onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
+    >
+      Tema curentă: {theme}
+    </button>
+  )
+}
+```
+
+<Callout type="info">
+  Context re-randează **toți consumatorii** când valoarea se schimbă. Pentru state complex și performanță, consideră Zustand sau Redux Toolkit.
+</Callout>
+
+## useReducer
+
+Alternativă la `useState` pentru logică de state mai complexă:
+
+```jsx
+import { useReducer } from 'react'
+
+const initialState = { count: 0 }
+
+function reducer(state, action) {
+  switch (action.type) {
+    case 'increment': return { count: state.count + 1 }
+    case 'decrement': return { count: state.count - 1 }
+    case 'reset':     return initialState
+    default: throw new Error('Acțiune necunoscută: ' + action.type)
+  }
+}
+
+export default function Counter() {
+  const [state, dispatch] = useReducer(reducer, initialState)
+
+  return (
+    <>
+      <p>Count: {state.count}</p>
+      <button onClick={() => dispatch({ type: 'increment' })}>+</button>
+      <button onClick={() => dispatch({ type: 'decrement' })}>-</button>
+      <button onClick={() => dispatch({ type: 'reset' })}>Reset</button>
+    </>
+  )
+}
+```
