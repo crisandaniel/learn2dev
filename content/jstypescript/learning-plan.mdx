@@ -1,0 +1,465 @@
+# Learning Plan: JavaScript & TypeScript Mid-Advanced
+
+> This plan covers the essential concepts to go from "I can work with them" to "I understand how they work".
+> Each section includes **what you need to know** and **common interview questions** with answers.
+
+---
+
+## 📦 MODULE 1: Advanced JavaScript – Under the Hood
+
+### 1.1 Event Loop, Call Stack, Task Queue
+
+**What you need to understand:**
+- Call Stack – synchronous execution, LIFO
+- Web APIs – timers, fetch, DOM events (run outside the JS engine)
+- Callback Queue (macrotasks) – setTimeout, setInterval, I/O
+- Microtask Queue – Promise.then, queueMicrotask, MutationObserver
+- **Priority order:** Call Stack → Microtasks → Macrotasks
+
+**Mental model example:**
+```js
+console.log("1");
+setTimeout(() => console.log("2"), 0);
+Promise.resolve().then(() => console.log("3"));
+console.log("4");
+// Output: 1, 4, 3, 2
+```
+
+**Interview questions:**
+
+**Q: What is the event loop and how does it work?**
+> The event loop is the mechanism that allows JavaScript to be non-blocking despite being single-threaded. It constantly checks if the call stack is empty, then moves tasks from the queue into the stack. The microtask queue (Promise.then) has priority over the macrotask queue (setTimeout).
+
+**Q: What's the difference between microtasks and macrotasks?**
+> Microtasks (Promise callbacks, MutationObserver) are processed immediately after the call stack empties, before any macrotask (setTimeout, setInterval, I/O events). This means Promise.resolve().then() executes before a setTimeout with delay 0.
+
+---
+
+### 1.2 Closures
+
+**What you need to understand:**
+- A function "closes over" the variables from the scope in which it was created
+- Closure = function + reference to its lexical scope
+- Use cases: encapsulation, module pattern, memoization, partial application
+
+```js
+function makeCounter() {
+  let count = 0;
+  return {
+    increment: () => ++count,
+    get: () => count
+  };
+}
+const counter = makeCounter();
+counter.increment(); // 1
+counter.get();       // 1
+```
+
+**Interview questions:**
+
+**Q: What is a closure?**
+> A closure is a function that retains access to the variables in the lexical scope in which it was defined, even after that scope is no longer active. A closure is formed every time a function is created.
+
+**Q: The classic closure-in-loop problem:**
+```js
+for (var i = 0; i < 3; i++) {
+  setTimeout(() => console.log(i), 0);
+}
+// Output: 3, 3, 3 — not 0, 1, 2
+// Fix with let (block scope) or an IIFE
+```
+> With `var`, all callbacks reference the same variable `i`. With `let`, each iteration creates a new binding.
+
+---
+
+### 1.3 Prototypal Inheritance & `this`
+
+**What you need to understand:**
+- Every object has an internal `[[Prototype]]` (accessible via `__proto__` or `Object.getPrototypeOf`)
+- `class` in JS is syntax sugar over the prototype chain
+- `this` is determined at **call time**, not at **define time** (exception: arrow functions)
+
+**Rules for `this`:**
+1. **Default binding** – regular function: `this` = global / `undefined` in strict mode
+2. **Implicit binding** – method on an object: `this` = the object to the left of the dot
+3. **Explicit binding** – `.call()`, `.apply()`, `.bind()`
+4. **New binding** – `new Constructor()`: `this` = the newly created object
+5. **Arrow functions** – have no own `this`, they inherit it from the lexical scope
+
+**Interview questions:**
+
+**Q: What value does `this` have in different contexts?**
+```js
+const obj = {
+  name: "test",
+  regular: function() { return this.name; },  // "test"
+  arrow: () => this.name  // undefined (or global.name)
+};
+```
+
+**Q: How does the prototype chain work?**
+> When you access a property on an object, JS looks for it first on the object itself, then on its `[[Prototype]]`, then on the prototype's prototype, and so on, up to `Object.prototype`. If it's not found anywhere, it returns `undefined`.
+
+---
+
+### 1.4 Scope, Hoisting, Temporal Dead Zone
+
+**What you need to understand:**
+- `var` – function scoped, hoisted with value `undefined`
+- `let` / `const` – block scoped, hoisted but in TDZ (cannot be accessed before declaration)
+- Function declarations – fully hoisted (including the definition)
+- Function expressions – only the variable is hoisted, not the value
+
+```js
+console.log(x); // undefined (var hoisted)
+console.log(y); // ReferenceError (TDZ)
+var x = 1;
+let y = 2;
+```
+
+**Interview questions:**
+
+**Q: What is the Temporal Dead Zone?**
+> The TDZ is the period between the start of a block scope and the point of the `let`/`const` declaration. Accessing the variable during this period throws a `ReferenceError`, even though technically the variable has been hoisted.
+
+---
+
+### 1.5 Asynchronous JavaScript
+
+**What you need to understand:**
+- Callbacks → Callback Hell
+- Promises: states (pending, fulfilled, rejected), chaining
+- `Promise.all`, `Promise.allSettled`, `Promise.race`, `Promise.any`
+- `async/await` – syntax sugar over Promises
+- Error handling: `.catch()` vs `try/catch`
+
+```js
+// Promise.all – fails if any one fails
+const [user, posts] = await Promise.all([fetchUser(), fetchPosts()]);
+
+// Promise.allSettled – waits for all, regardless of result
+const results = await Promise.allSettled([fetchA(), fetchB()]);
+```
+
+**Interview questions:**
+
+**Q: What's the difference between `Promise.all` and `Promise.allSettled`?**
+> `Promise.all` rejects immediately if any promise fails (fail-fast). `Promise.allSettled` waits for all to finish and returns an array with the status of each one (`{status: "fulfilled", value}` or `{status: "rejected", reason}`).
+
+**Q: What happens if `await` is used without `try/catch`?**
+> If the promise is rejected, the error propagates and can result in an unhandled rejection. Best practice: always wrap with `try/catch` or add `.catch()`.
+
+---
+
+## 🧩 MODULE 2: Advanced JavaScript – Patterns & Techniques
+
+### 2.1 Immutability & Pure Functions
+
+**What you need to understand:**
+- Reference vs value (primitives vs objects)
+- Spread operator for shallow copy
+- `structuredClone()` for deep copy
+- Pure functions: same input → same output, no side effects
+
+```js
+// Shallow copy – the problem
+const a = { x: { y: 1 } };
+const b = { ...a };
+b.x.y = 99; // also modifies a.x.y!
+
+// Deep copy
+const c = structuredClone(a); // ES2022
+```
+
+**Interview questions:**
+
+**Q: What's the difference between a shallow and a deep copy?**
+> A shallow copy creates a new object, but properties that are references (nested objects, arrays) are copied as references, not as new values. A deep copy creates recursive copies for all levels.
+
+---
+
+### 2.2 Higher-Order Functions & Functional Programming
+
+**What you need to understand:**
+- `map`, `filter`, `reduce` – internal implementation
+- Currying and partial application
+- Function composition
+- `flatMap`
+
+```js
+// Currying
+const multiply = (a) => (b) => a * b;
+const double = multiply(2);
+double(5); // 10
+
+// Compose
+const compose = (...fns) => x => fns.reduceRight((acc, fn) => fn(acc), x);
+```
+
+**Interview questions:**
+
+**Q: How do you implement `reduce` manually?**
+```js
+Array.prototype.myReduce = function(callback, initialValue) {
+  let acc = initialValue !== undefined ? initialValue : this[0];
+  let start = initialValue !== undefined ? 0 : 1;
+  for (let i = start; i < this.length; i++) {
+    acc = callback(acc, this[i], i, this);
+  }
+  return acc;
+};
+```
+
+---
+
+### 2.3 Design Patterns in JS
+
+**What you need to know:**
+- **Module Pattern** – encapsulation with IIFE / ES Modules
+- **Observer/EventEmitter** – publish-subscribe
+- **Factory Pattern** – create objects without `new`
+- **Singleton** – a single instance
+- **Proxy** – intercept operations on objects
+
+```js
+// Proxy – useful for validation, logging, reactive systems
+const handler = {
+  set(target, prop, value) {
+    if (typeof value !== "number") throw new TypeError("Only numbers!");
+    target[prop] = value;
+    return true;
+  }
+};
+const obj = new Proxy({}, handler);
+```
+
+**Interview questions:**
+
+**Q: How does `Proxy` work and where is it used in practice?**
+> `Proxy` allows you to intercept and customize fundamental operations on an object (get, set, delete, etc.). It's used in reactive systems (Vue 3 uses it for reactivity), data validation, logging, and automatic memoization.
+
+---
+
+## 🔷 MODULE 3: Advanced TypeScript
+
+### 3.1 The Type System in Depth
+
+**What you need to understand:**
+- Structural typing (duck typing) – not nominal typing
+- Type widening and narrowing
+- `unknown` vs `any` vs `never`
+- Discriminated unions
+
+```ts
+// unknown is safer than any
+function process(value: unknown) {
+  if (typeof value === "string") {
+    console.log(value.toUpperCase()); // OK, narrowed
+  }
+}
+
+// never – impossible type, useful for exhaustive checks
+type Shape = "circle" | "square";
+function getArea(shape: Shape): number {
+  switch (shape) {
+    case "circle": return Math.PI;
+    case "square": return 1;
+    default:
+      const _exhaustive: never = shape; // error if Shape has unhandled values
+      throw new Error(`Unknown: ${_exhaustive}`);
+  }
+}
+```
+
+**Interview questions:**
+
+**Q: What's the difference between `unknown` and `any`?**
+> `any` completely disables type checking – you can do anything with an `any` value. `unknown` is type-safe: you must narrow the type before using the value. Prefer `unknown` for external inputs (API responses, user input).
+
+**Q: What is structural typing?**
+> TypeScript checks type compatibility by structure (what properties it has), not by name. If two types have the same structure, they are compatible, even if they have different names.
+
+---
+
+### 3.2 Generics
+
+**What you need to understand:**
+- Generic functions, classes, interfaces
+- Generic constraints with `extends`
+- Default type parameters
+- Type inference with generics
+
+```ts
+// Generic with constraint
+function getProperty<T, K extends keyof T>(obj: T, key: K): T[K] {
+  return obj[key];
+}
+
+// Generic with default
+interface ApiResponse<T = unknown> {
+  data: T;
+  status: number;
+}
+```
+
+**Interview questions:**
+
+**Q: When do you use generics?**
+> Generics are useful when you want to write reusable code that works with multiple types while maintaining type safety. E.g.: utility functions (`identity`, `map`, `filter`), React components (`useState<T>()`), API call wrappers.
+
+---
+
+### 3.3 Utility Types
+
+**What you need to know:**
+
+| Utility Type | What it does |
+|---|---|
+| `Partial<T>` | All properties become optional |
+| `Required<T>` | All properties become required |
+| `Readonly<T>` | No property can be mutated |
+| `Pick<T, K>` | Select only certain properties |
+| `Omit<T, K>` | Exclude certain properties |
+| `Record<K, V>` | Object with keys of type K and values V |
+| `Exclude<T, U>` | Exclude types from a union |
+| `Extract<T, U>` | Keep types from a union |
+| `ReturnType<T>` | The return type of a function |
+| `Parameters<T>` | The parameter types of a function |
+
+```ts
+type User = { id: number; name: string; email: string };
+
+type UpdateUser = Partial<Pick<User, "name" | "email">>;
+// { name?: string; email?: string }
+```
+
+**Interview questions:**
+
+**Q: How do you implement `Partial<T>` manually?**
+```ts
+type MyPartial<T> = {
+  [K in keyof T]?: T[K];
+};
+```
+
+---
+
+### 3.4 Conditional Types & Mapped Types
+
+**What you need to understand:**
+- `T extends U ? X : Y`
+- The `infer` keyword
+- Mapped types with modifiers (`+?`, `-?`, `readonly`)
+- Template literal types
+
+```ts
+// Conditional type with infer
+type UnpackPromise<T> = T extends Promise<infer U> ? U : T;
+type Result = UnpackPromise<Promise<string>>; // string
+
+// Template literal types
+type EventNames = "click" | "focus" | "blur";
+type Handlers = `on${Capitalize<EventNames>}`;
+// "onClick" | "onFocus" | "onBlur"
+```
+
+**Interview questions:**
+
+**Q: What does `infer` do in TypeScript?**
+> `infer` lets you "extract" a type from a more complex type within a conditional type. It's frequently used to extract the resolved value type from a Promise, the element type from an array, or the argument types from a function.
+
+---
+
+### 3.5 Declaration Merging & Module Augmentation
+
+**What you need to understand:**
+- Interface merging (interfaces with the same name are merged)
+- Augmenting external modules
+- `declare module`, `declare global`
+
+```ts
+// Augmentation – adding types to an external module
+declare module "express" {
+  interface Request {
+    user?: { id: string; role: string };
+  }
+}
+```
+
+---
+
+### 3.6 TypeScript Compiler & tsconfig
+
+**Important options to know:**
+
+```json
+{
+  "compilerOptions": {
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+    "moduleResolution": "bundler",
+    "paths": {}
+  }
+}
+```
+
+**Interview questions:**
+
+**Q: What does `strict: true` enable?**
+> It enables a set of checks: `strictNullChecks` (null/undefined are not assignable to other types), `strictFunctionTypes`, `strictBindCallApply`, `noImplicitAny`, `noImplicitThis`, and others.
+
+---
+
+## 🎯 MODULE 4: Interview Questions – Mixed JS/TS
+
+**Q: Explain the difference between `==` and `===`.**
+> `===` (strict equality) compares both type and value, with no coercion. `==` (loose equality) performs type coercion before comparing (e.g. `"5" == 5` is `true`). Always use `===`.
+
+**Q: What is memoization and how do you implement it?**
+```ts
+function memoize<T extends (...args: any[]) => any>(fn: T): T {
+  const cache = new Map<string, ReturnType<T>>();
+  return ((...args: Parameters<T>) => {
+    const key = JSON.stringify(args);
+    if (cache.has(key)) return cache.get(key)!;
+    const result = fn(...args);
+    cache.set(key, result);
+    return result;
+  }) as T;
+}
+```
+
+**Q: How does `WeakMap` work and when do you use it?**
+> `WeakMap` holds "weak" references to keys (objects only). If the key object has no other references, it gets garbage collected along with the WeakMap entry. Useful for caching without memory leaks and for storing private data associated with an object.
+
+**Q: What is debounce and throttle?**
+> **Debounce** – delays execution until a certain time has passed since the last call (use case: search input).
+> **Throttle** – limits execution to at most once per time interval (use case: scroll events, resize).
+
+**Q: Explain the difference between `interface` and `type` in TypeScript.**
+> Both can describe the shape of an object. Key differences: `interface` supports declaration merging and is preferred for public APIs; `type` can express unions, intersections, mapped types, and conditional types. In practice, for objects both work, but `type` is more flexible for complex types.
+
+**Q: What is the `satisfies` operator in TypeScript?**
+```ts
+const config = {
+  port: 3000,
+  host: "localhost"
+} satisfies Record<string, string | number>;
+// The type remains the inferred (specific) one, but is validated against Record
+```
+> `satisfies` validates that a value conforms to a type, without losing the more specific inferred type. Different from `as` (which forces a type) and `: Type` (which widens the type).
+
+---
+
+## 📚 Recommended Resources
+
+- **[overreacted.io](https://overreacted.io)** – Dan Abramov, deep dives into JS/React
+- **[you-dont-know-js](https://github.com/getify/You-Dont-Know-JS)** – free on GitHub, the best resource for deep JS
+- **[typescript-deep-dive](https://basarat.gitbook.io/typescript/)** – Basarat Ali Syed
+- **[total-typescript.com](https://www.totaltypescript.com)** – Matt Pocock, the best for advanced TS
+- **[javascript.info](https://javascript.info)** – complete, modern reference
+
+---
+
+*Plan designed for mid-advanced level. Estimated completion time: 4–8 weeks, depending on pace.*

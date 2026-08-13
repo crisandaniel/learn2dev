@@ -1,5 +1,6 @@
 export default {
-  index: 'Introducere',
+  index: 'Intro',
+  jstypescript: 'JavaScript & TypeScript',
   react: '⚛️ React',
   nextjs: '▲ Next.js',
 }
