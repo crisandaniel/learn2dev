@@ -1,0 +1,47 @@
+# Hoisting
+
+> To hoist means to raise or lift something up, often using ropes, chains, or mechanical tools like a crane
+
+---
+
+## Full Hoisting Example
+
+> applies to functions and variables declared with `var` (not `let` or `const`)
+
+```js
+saySomething(); // Output: "Hello, world!"
+
+function saySomething() {
+  console.log("Hello, world!");
+}
+```
+How JS reads the code:
+
+```js
+function saySomething() { // hoisted to the top
+  console.log("Hello, world!");
+}
+saySomething(); // Output: "Hello, world!"
+```
+
+```js
+console.log(myVar); // Output: undefined
+var myVar = 10;
+console.log(myVar); // Output: 10
+```
+How JS reads the code:
+```js
+var myVar; // hoisted to the top; Declared AND assigned "undefined"
+console.log(myVar); // Output: undefined
+myVar = 10;
+console.log(myVar); // Output: 10
+```
+
+## Partial Hoisting Example
+
+> applies to let and const variables; these are hoisted (moved up) but not initialized (i.e. like var gets initialized with `undefined`), so they cannot be accessed before their declaration.
+
+```js
+console.log(myVar); // Output: ReferenceError: Cannot access 'myVar' before initialization
+let myVar = 10;
+console.log(myVar); // Output: 10

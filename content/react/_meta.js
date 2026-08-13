@@ -1,5 +1,5 @@
 export default {
-  components: 'Componente',
+  components: 'Components',
   hooks: 'Hooks',
   state: 'State Management',
 }

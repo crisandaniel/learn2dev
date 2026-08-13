@@ -1,0 +1,94 @@
+# Interfaces
+
+> An interface is a contract that defines the structure of an object, specifying which properties and methods it must have.
+
+---
+
+## Duck Typing
+
+> Duck typing is a concept in programming where the type or class of an object is determined by its behavior (methods and properties) rather than its explicit declaration.
+> In other words, if an object "quacks like a duck," it can be treated as a duck, regardless of its actual type.
+
+```js
+interface Duck {
+  quack(): void;
+  swim(): void;
+}
+
+function PrintDuck(duck: Duck) {
+  duck.quack();
+  duck.swim();
+}
+
+let myDuck = {
+  // didn't expliciutly implement the Duck interface,
+  // BUT it has the required methods => DuckTyping
+  // even though it has an extra method that is not part of the Duck interface
+  quack: () => console.log("my Duck Quacks!"),
+  swim: () => console.log("my Duck is Swimming!"),
+  specialFeature: () => console.log("my Duck has a Special Feature!"),
+};
+
+PrintDuck(myDuck);
+// my Duck Quacks!
+// my Duck is Swimming!
+```
+As opposed to declaring a variable with a specific type:
+```js
+let yourDuck: Duck = {
+  quack: () => console.log("my Duck Quacks!"),
+  swim: () => console.log("my Duck is Swimming!"),
+  specialFeature: () => console.log("my Duck has a Special Feature!"),
+};
+// Object literal may only specify known properties, and 'specialFeature' does not exist in type 'Duck'.
+```
+
+## Type Alias and Function Interfaces
+
+> Defining function types using type aliases and interfaces in TypeScript allows you to specify the shape of a function, including its parameters and return type. Both approaches can be used to create reusable function types, but they have some differences in syntax and usage.s
+
+```ts
+// Type alias declare function type
+type StringGenerator = (str: string) => string; // !Notice the arrow sign (=>) used to define the function type
+
+// Implementation of the StringGenerator type
+const stringGenerator: StringGenerator = (str: string): string => {
+  return str;
+}
+const result1 = stringGenerator("Hello, TypeScript!");
+console.log(result1); // Output: Hello, TypeScript!
+
+// Interface declare function type
+interface StringGeneratorInterface {
+  (str: string): string; // !Notice the colons (:) used to define the function type as oposed to type alias which uses the arrow sign (=>)
+}
+
+// Implementation of the StringGeneratorInterface type
+const stringGeneratorInterface: StringGeneratorInterface = (str: string): string => {
+  return str;
+}
+const result2 = stringGeneratorInterface("Hello, TypeScript Interface!");
+console.log(result2); // Output: Hello, TypeScript Interface!
+```
+
+## Extewnding Interfaces
+
+> In TypeScript, you can extend interfaces to create new interfaces that inherit properties and methods from existing ones. This allows you to build upon existing contracts and create more specialized types.
+
+```ts
+interface Animal {
+  name: string;
+  makeSound?: (sound: string) => void; // Notice arrow sign (=>) used to define the function type
+}
+
+interface Dog extends Animal {
+  breed: string;
+  bark: () => void; // Notice arrow sign (=>) used to define the function type
+}
+
+let myDog:Dog = {
+  name: "Buddy", // Inherited from Animal interface
+  breed: "Golden Retriever",
+  bark: () => console.log("Woof! Woof!"),
+};
+```

@@ -1,0 +1,39 @@
+# Functions
+
+## Arrow Functions
+
+```js
+// Arrow Function 1 (Single Parameter, Implicit Return)
+const square = x => x * x;
+
+// Arrow Function 2 (Multiple Parameters, Implicit Return)
+const add = (a, b) => a + b;
+
+// Arrow Function 3 (Multiple Parameters, Explicit Return)
+const multiply = (a, b) => {
+  return a * b;
+};
+
+// Arrow Function 4 (No Parameters, Implicit Return)
+const greet = () => "Hello, world!";
+```
+
+## Function Declaration vs Function Expression
+
+```js
+// Function Declaration
+function add(a, b) { // uses `function` keyword and has a name
+  return a + b;
+}
+
+// Function Expression 1 (Anonymous Function)
+const add = function(a, b) { // uses `function` keyword but is anonymous
+  return a + b;
+};
+
+// Function Expression 2 (Arrow Function)
+const add = (a, b) => { // uses arrow syntax
+  return a + b;
+};
+```
+
